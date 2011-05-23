@@ -242,8 +242,8 @@ class cmb_Meta_Box {
 							$check_image = preg_match( '/(^.*\.jpg|jpeg|png|gif|ico*)/i', $meta );
 							if ( $check_image ) {
 								echo '<div class="img_status">';
+								echo '<a href="#" class="remove_file_button" rel="', $field['id'], '">Remove Image</a><br>';
 								echo '<img src="', $meta, '" alt="" />';
-								echo '<a href="#" class="remove_file_button" rel="', $field['id'], '">Remove Image</a>';
 								echo '</div>';
 							} else {
 								$parts = explode( "/", $meta );
@@ -294,12 +294,18 @@ class cmb_Meta_Box {
 			if ( ($field['type'] == 'textarea') || ($field['type'] == 'textarea_small') ) {
 				$new = htmlspecialchars($new);
 			}
+			
 
 			// validate meta value
 			if ( isset($field['validate_func']) ) {
 				$ok = call_user_func(array('cmb_Meta_Box_Validate', $field['validate_func']), $new);
 				if ( $ok === false ) { // pass away when meta value is invalid
 					continue;
+				}
+			} elseif( ($field['type']) == 'file' ) {
+				delete_post_meta($post_id,$name);
+				if($new != null) {				
+					add_post_meta($post_id,$name,$new);
 				}
 			} elseif ( 'multicheck' == $field['type'] ) {
 				// Do the saving in two steps: first get everything we don't have yet
@@ -404,7 +410,12 @@ function cmb_styles_inline() {
 		table.cmb_metabox .cmb_upload_status {  margin: 10px 0 0 0;}
 		table.cmb_metabox .cmb_upload_status .img_status {  position: relative; }
 		table.cmb_metabox .cmb_upload_status .img_status img { border:1px solid #DFDFDF; background: #FAFAFA; max-width:350px; padding: 5px; -moz-border-radius: 2px; border-radius: 2px;}
-		table.cmb_metabox .cmb_upload_status .img_status .remove_file_button { text-indent: -9999px; background: url(<?php bloginfo('stylesheet_directory'); ?>/lib/metabox/images/ico-delete.png); width: 16px; height: 16px; position: absolute; top: -5px; left: -5px;}
+		table.cmb_metabox .cmb_upload_status .img_status .remove_file_button { 
+			text-indent: -9999px; 
+			background: url(<?php bloginfo('stylesheet_directory'); ?>/lib/metabox/images/ico-delete.png); 
+			width: 16px; 
+			height: 16px; 
+			}
 	</style>
 	<?php
 }

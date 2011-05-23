@@ -37,10 +37,11 @@ jQuery(document).ready(function($) {
 		return false;
 	});
 	
-	$('.remove_file_button').live('click', function() {
+	$('.remove_file_button').live('click', function(e) {
+		e.preventDefault();
 		formfield = $(this).attr('rel');
-		$('input.' + formfield).val('');
 		$(this).parent().remove();
+		$('input.' + formfield).attr('value',null);
 		return false;
 	});
 	
