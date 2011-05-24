@@ -47,7 +47,6 @@ class cmb_Custom_Column {
 		}
 	
 	function columns() {
-		
 		foreach($this->custom_cols as $key => $values) {
 			add_filter('manage_edit-'.$key.'_columns',array($this,'custom_column'));
 			add_action('manage_'.$key.'_posts_custom_column',array($this,'custom_column_display'));
@@ -56,9 +55,11 @@ class cmb_Custom_Column {
 	
 	function custom_column($columns) {
 		global $post;
+		unset($columns['date']);
 		foreach($this->custom_cols[$post->post_type] as $custom) {
 			$columns[$custom['key']] = $custom['label'];
 		}
+		$columns['date'] = 'Date';
 		return $columns;
 	}
 	
