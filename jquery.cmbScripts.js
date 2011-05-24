@@ -90,6 +90,23 @@ jQuery(document).ready(function($) {
 			window.original_send_to_editor(html);
 		}
 		// Clear the formfield value so the other media library popups can work as they are meant to. - 2010-11-11.
+		$('.' + formfield).load(window.location.href+" ."+formfield+"> *","");
 		formfield = '';
 	}
+	
+	function ajax_working() {
+		$('a#remove-attach').html('working..');
+	}
+	
+	function ajax_removed() {
+		$('a#remove-attach').html('removed');
+	}
+	
+	$('a#remove-attach').click(function(e) {
+		e.preventDefault();
+		var aID = $(this).attr('rel');
+		$.post(cmb_ajax.ajaxurl,{ action:'cmb-remove-file',pid:aID },function(data) {} );
+		$(this).parent().parent().css('backgroundColor','red').css('color','white').html('removed').delay(300).slideUp();
+		});
+	
 });
