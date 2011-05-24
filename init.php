@@ -87,6 +87,7 @@ class cmb_Meta_Box {
 
 		add_action( 'admin_menu', array(&$this, 'add') );
 		add_action( 'save_post', array(&$this, 'save') );
+		
 	}
 
 	function add_post_enctype() {
@@ -133,6 +134,7 @@ class cmb_Meta_Box {
 				}			
 				echo '<td>';
 			}		
+			
 			
 			switch ( $field['type'] ) {
 				case 'text':
@@ -255,6 +257,7 @@ class cmb_Meta_Box {
 						}
 					echo '</div>'; 
 				break;
+				
 			}
 			echo '</td>','</tr>';
 		}
@@ -328,6 +331,7 @@ class cmb_Meta_Box {
 			}
 		}
 	}
+	
 }
 
 
@@ -419,6 +423,5 @@ function cmb_styles_inline() {
 	</style>
 	<?php
 }
-
+require_once('custom-columns.php');
 // End. That's it, folks! //
-
