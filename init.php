@@ -44,12 +44,30 @@ foreach ( $meta_boxes as $meta_box ) {
  */
 
 class cmb_Meta_Box_Validate {
+	
 	function check_text( $text ) {
 		if ($text != 'hello') {
 			return false;
 		}
 		return true;
 	}
+}
+
+class cmb_Meta_Box_Sanitize {
+	
+	function uppercase( $text ) {
+		return ucwords( $text );
+	}
+	
+	function lowercase( $text ) {
+		return strtolower($text);
+	}
+	
+	function sanitize_link( $text ) {
+		$text = str_replace("http://",'', $text);
+		return $text;
+	}
+	
 }
 
 
@@ -72,6 +90,7 @@ class cmb_Meta_Box {
 		$this->_meta_box = $meta_box;
 
 		$upload = false;
+		
 		foreach ( $meta_box['fields'] as $field ) {
 			if ( $field['type'] == 'file' || $field['type'] == 'file_list' ) {
 				$upload = true;
@@ -298,10 +317,13 @@ class cmb_Meta_Box {
 				$new = htmlspecialchars($new);
 			}
 			
-
+			if( isset($field['sanitize_func']) ) {
+				$new = call_user_func(array('cmb_Meta_Box_Sanitize',$field['sanitize_func']), $new );
+			}
 			// validate meta value
 			if ( isset($field['validate_func']) ) {
 				$ok = call_user_func(array('cmb_Meta_Box_Validate', $field['validate_func']), $new);
+				
 				if ( $ok === false ) { // pass away when meta value is invalid
 					continue;
 				}
