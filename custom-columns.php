@@ -47,7 +47,8 @@ class cmb_Custom_Column {
 		}
 	
 	function columns() {
-		foreach($this->custom_cols as $key => $values) {
+		$cols = !is_array($this->custom_cols) ? array($this->custom_cols) :$this->custom_cols;
+		foreach($cols as $key => $values) {
 			add_filter('manage_edit-'.$key.'_columns',array($this,'custom_column'));
 			add_action('manage_'.$key.'_posts_custom_column',array($this,'custom_column_display'));
 		}	
