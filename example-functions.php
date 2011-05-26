@@ -16,7 +16,10 @@ $meta_boxes[] = array(
             'name' => 'Test Text',
             'desc' => 'field description (optional)',
             'id' => $prefix . 'test_text',
-            'type' => 'text'
+            'type' => 'text',
+            'custom_column'=>true,
+            'custom_column_label'=> 'Text Field',
+            'custom_column_cb' => false
         ),
 		array(
             'name' => 'Test Text Small',

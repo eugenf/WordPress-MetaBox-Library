@@ -233,26 +233,52 @@ class cmb_Meta_Box {
 					break;
 */
 				case 'file_list':
-					echo '<input id="upload_file" type="text" size="36" name="', $field['id'], '" value="" />';
-					echo '<input class="upload_button button" type="button" value="Upload File" />';
-					echo '<p class="cmb_metabox_description">', $field['desc'], '</p>';
-						$args = array(
-								'post_type' => 'attachment',
-								'numberposts' => null,
-								'post_status' => null,
-								'post_parent' => $post->ID
-							);
-							$attachments = get_posts($args);
-							if ($attachments) {
-								echo '<ul class="attach_list">';
-								foreach ($attachments as $attachment) {
-									echo '<li>'.wp_get_attachment_link($attachment->ID, 'thumbnail', 0, 0, 'Download');
-									echo '<span>';
-									echo apply_filters('the_title', '&nbsp;'.$attachment->post_title);
-									echo '</span></li>';
+					if($field['mode'] == 'all' || !isset($field['mode'])) {
+						echo '<input id="upload_file" type="text" size="36" name="', $field['id'], '" value="" />';
+						echo '<input class="upload_button button" type="button" value="Upload File" />';
+						echo '<p class="cmb_metabox_description">', $field['desc'], '</p>';
+							$args = array(
+									'post_type' => 'attachment',
+									'numberposts' => null,
+									'post_status' => null,
+									'post_parent' => $post->ID
+								);
+								$attachments = get_posts($args);
+								if ($attachments) {
+									echo '<ul class="attach_list">';
+									foreach ($attachments as $attachment) {
+										echo '<li>'.wp_get_attachment_link($attachment->ID, 'thumbnail', 0, 0, 'Download');
+										echo '<span>';
+										echo apply_filters('the_title', '&nbsp;'.$attachment->post_title);
+										echo '</span>';
+										echo ' / <span><a href="" id="remove-attach" rel="'.$attachment->ID.'">Remove</a></li>';
+									}
+									echo '</ul>';
 								}
-								echo '</ul>';
+					} elseif($field['mode'] == 'only') { 
+							echo '<input id="upload_file" type="text" size="36" name="', $field['id'], '" value="" />';
+							echo '<input class="upload_button button" type="button" value="Upload File" />';
+							echo '<p class="cmb_metabox_description">', $field['desc'], '</p>';
+						$files = get_post_meta($post->ID,$field['id'],false);
+						if(!empty($files)) {
+									echo '<ul class="attach_list">';
+								if(is_array($files)) {
+										foreach ($files as $file) {
+											echo '<li>'.wp_get_attachment_link($file, 'thumbnail', 0, 0, 'Download');
+											echo '<span>';
+											echo apply_filters('the_title', '&nbsp;'.get_the_title($file));
+											echo '</span></li>';	
+										}
+								} else {
+											echo '<li>'.wp_get_attachment_link($files, 'thumbnail', 0, 0, 'Download');
+											echo '<span>';
+											echo apply_filters('the_title', '&nbsp;'.get_the_title($file));
+											echo '</span></li>';	
+								}
 							}
+						}
+						echo '<div id="', $field['id'], '_status" class="cmb_upload_status">';	
+						echo '</div>';
 						break;
 				case 'file':
 					echo '<input id="upload_file" type="text" size="45" class="', $field['id'], '" name="', $field['id'], '" value="', $meta, '" />';
@@ -364,6 +390,7 @@ class cmb_Meta_Box {
 function cmb_scripts( $hook ) {
   	if ( $hook == 'post.php' OR $hook == 'post-new.php' OR $hook == 'page-new.php' OR $hook == 'page.php' ) {
 		wp_register_script( 'cmb-scripts', CMB_META_BOX_URL.'jquery.cmbScripts.js', array('jquery','media-upload','thickbox'));
+		wp_localize_script( 'cmb-scripts', 'cmb_ajax', array( 'ajaxurl' => admin_url( 'admin-ajax.php' ) ) );
 		wp_enqueue_script( 'jquery' );
 		wp_enqueue_script( 'jquery-ui-core' ); // Make sure and use elements form the 1.7.3 UI - not 1.8.9
 		wp_enqueue_script( 'media-upload' );
@@ -445,5 +472,17 @@ function cmb_styles_inline() {
 	</style>
 	<?php
 }
+
+
+add_action('wp_ajax_cmb-remove-file','cmb_ajax_remove_file');
+function cmb_ajax_remove_file() {
+	global $wpdb;
+	$id = $_POST['pid'];
+	$query = $wpdb->prepare("UPDATE $wpdb->posts SET post_parent = 0 WHERE ID = %d"	, $id);
+	$wpdb->query($query);
+	echo 'Removed from post';
+	exit;
+}
+
 require_once('custom-columns.php');
 // End. That's it, folks! //
