@@ -56,9 +56,11 @@ class cmb_Custom_Column {
 	
 	function custom_column($columns) {
 		global $post;
+		unset($columns['date']);
 		foreach($this->custom_cols[$post->post_type] as $custom) {
 			$columns[$custom['key']] = $custom['label'];
 		}
+		$columns['date'] = 'Date';
 		return $columns;
 	}
 	
