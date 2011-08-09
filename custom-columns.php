@@ -1,16 +1,11 @@
 <?php
 /*
-**
-** Custom Columns For the cmb_Meta_Box class
-**
-**/
+ *
+ * Custom Columns For the bpmm_Meta_Box class
+ *
+ */
 
-foreach($meta_boxes as $meta_box) {
-	new cmb_Custom_Column($meta_box);
-}
-
-
-class cmb_Custom_Column {
+class bpmm_Custom_Column {
 	public $_meta_box;
 	private $current_field;
 	public $custom_cols;
@@ -74,7 +69,4 @@ class cmb_Custom_Column {
 				echo $v;
 			}
 	}
-}
-
-
-?>
+}?>

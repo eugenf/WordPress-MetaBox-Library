@@ -106,6 +106,9 @@ class cmb_Meta_Box {
 
 		add_action( 'admin_menu', array(&$this, 'add') );
 		add_action( 'save_post', array(&$this, 'save') );
+		if(is_admin()) {
+			wp_enqueue_script('jquery');
+		}
 		
 	}
 
@@ -301,8 +304,27 @@ class cmb_Meta_Box {
 							}	
 						}
 					echo '</div>'; 
-				break;
-				
+					break;
+				case 'uploadify':
+				$upload_dir = wp_upload_dir();
+					?>
+					<script type="text/javascript"> 
+						var $ = jQuery.noConflict();
+							$(document).ready(function() {
+								$('a#upload-<?php echo $field['id']; ?>').click(function(e) {
+									e.preventDefault();
+									var file = $('#<?php echo $field['id']; ?>')[0];
+									var field = '<?php echo $field['id']; ?>';
+									$.post(ajaxurl,{action:'mbclass_upload',post_id:'<?php echo $post->ID; ?>',field:field,file:file}, function(data) {
+										alert(data);
+									});
+								});
+						});
+					</script> 
+					<input type="file" id="<?php echo $field['id']; ?>" name="<?php echo $field['id']; ?>" />
+					<p><a href="" id="upload-<?php echo $field['id']; ?>">Upload Files</a></p>
+					<div id="return-data"></div>
+					<?php
 			}
 			echo '</td>','</tr>';
 		}
@@ -481,6 +503,12 @@ function cmb_ajax_remove_file() {
 	$query = $wpdb->prepare("UPDATE $wpdb->posts SET post_parent = 0 WHERE ID = %d"	, $id);
 	$wpdb->query($query);
 	echo 'Removed from post';
+	exit;
+}
+
+add_action('wp_ajax_mbclass_upload','cmb_ajax_upload_file');
+function cmb_ajax_upload_file() {
+	$field = $_POST['field'];
 	exit;
 }
 
