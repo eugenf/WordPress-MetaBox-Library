@@ -1,11 +1,11 @@
 <?php
 /*
  *
- * Custom Columns For the bpmm_Meta_Box class
+ * Custom Columns For the DMB_Meta_Box class
  *
  */
 
-class bpmm_Custom_Column {
+class DMB_Custom_Column {
 	public $_meta_box;
 	private $current_field;
 	public $custom_cols;
@@ -22,23 +22,23 @@ class bpmm_Custom_Column {
 		function setup() {
 			$fields = $this->_meta_box['fields']; 
 			foreach($fields as $field) {
-			$this->current_field = $field;
-			$this->actions = array();
-			//set custom columns if option is set.
-				if($field['custom_column'] === true) {
-					if(is_array($this->_meta_box['pages'])) {
-						foreach($this->_meta_box['pages'] as $page) {
-							$this->custom_cols[$page][] = array( 
-									'key'=> $field['id'],'label'=>$field['custom_column_label'], 'cb'=> $field['custom_column_cb']);
-							$this->actions[] = $field['id'];	
+				$this->current_field = $field;
+				$this->actions = array();
+				//set custom columns if option is set.
+					if(@$field['custom_column'] === 'true') {
+						if(is_array($this->_meta_box['pages'])) {
+							foreach($this->_meta_box['pages'] as $page) {
+								$this->custom_cols[$page][] = array( 
+										'key'=> $field['id'],'label'=>$field['custom_column_label'], 'cb'=> $field['custom_column_cb']);
+								$this->actions[] = $field['id'];	
+							}
+						} else {
+							$this->custom_cols[$this->_meta_box['pages']][] = array( 
+								'key'=> $field['id'],'label'=>$field['custom_column_label'], 'cb'=> $field['custom_column_cb']);
+							$this->actions[] = $field['id'];
 						}
-					} else {
-						$this->custom_cols[$this->_meta_box['pages']][] = array( 
-							'key'=> $field['id'],'label'=>$field['custom_column_label'], 'cb'=> $field['custom_column_cb']);
-						$this->actions[] = $field['id'];
 					}
 				}
-			}
 		}
 	
 	function columns() {

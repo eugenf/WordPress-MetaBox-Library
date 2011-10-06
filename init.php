@@ -33,16 +33,16 @@ Version: 		1.0
 		You should not edit the code below or things might explode!
 *************************************************************************/
 
-define( bpmm_META_BOX_URL, trailingslashit( str_replace( WP_CONTENT_DIR, WP_CONTENT_URL, dirname(__FILE__) ) ) );
+define('DMB_META_BOX_URL', trailingslashit( str_replace( WP_CONTENT_DIR, WP_CONTENT_URL, dirname(__FILE__) ) ) );
 /**
  *
  * This function registers all the metaboxes and returns a global variable used by the class.
  *
  */
-function bpmm_register_box($boxes) {
-		global $bpmm_boxes;
-		$bpmm_boxes[] = $boxes;
-		return $bpmm_boxes;
+function DMB_register_box($boxes) {
+		global $DMB_boxes;
+		$DMB_boxes[] = $boxes;
+		return $DMB_boxes;
 	}
 	
 /**
@@ -51,14 +51,18 @@ function bpmm_register_box($boxes) {
  *
  */
 
-	class bpmm_Meta_Box_Builder {	
+	class DMB_Meta_Box_Builder {	
 		
-		function init_boxes() {
-			global $bpmm_boxes;
-			if(!empty($bpmm_boxes)) {
-				foreach ( $bpmm_boxes as $meta_box ) {
-						new bpmm_Meta_Box($meta_box);
-						new bpmm_Custom_Column($meta_box);
+		public static function init_boxes() {
+			global $DMB_boxes;
+			if(!empty($DMB_boxes)) {
+				foreach ( $DMB_boxes as $meta_box ) {
+					if($meta_box['mode'] == 'standard') {
+						new DMB_Meta_Box($meta_box);
+					} elseif($meta_box['mode'] == 'PT') {
+						new DMB_PT_Meta_Box($meta_box);
+					}
+					new DMB_Custom_Column($meta_box);
 				}
 			}		
 		}
@@ -72,7 +76,7 @@ function bpmm_register_box($boxes) {
  * methods in the definition of meta boxes (key 'validate_func' of each field)
  */
 	
-	class bpmm_Meta_Box_Validate {
+	class DMB_Meta_Box_Validate {
 		
 		function check_text( $text ) {
 			if ($text != 'hello') {
@@ -88,7 +92,7 @@ function bpmm_register_box($boxes) {
  * 
  */
 	
-	class bpmm_Meta_Box_Sanitize {
+	class DMB_Meta_Box_Sanitize {
 		
 		function uppercase( $text ) {
 			return ucwords( $text );
@@ -111,7 +115,7 @@ function bpmm_register_box($boxes) {
 	 * Create meta boxes
 	 */
 
-	class bpmm_Meta_Box {
+	class DMB_Meta_Box {
 		protected $_meta_box;
 	
 		function __construct( $meta_box ) {
@@ -171,7 +175,7 @@ function bpmm_register_box($boxes) {
 	
 			// Use nonce for verification
 			echo '<input type="hidden" name="wp_meta_box_nonce" value="', wp_create_nonce(basename(__FILE__)), '" />';
-			echo '<table class="form-table bpmm_metabox">';
+			echo '<table class="form-table DMB_metabox">';
 	
 			foreach ( $this->_meta_box['fields'] as $field ) {
 				// Set up blank values for empty ones
@@ -197,27 +201,27 @@ function bpmm_register_box($boxes) {
 				switch ( $field['type'] ) {
 					case 'text':
 						echo '<input type="text" name="', $field['id'], '" id="', $field['id'], '" value="', $meta ? $meta : $field['std'], '" style="width:97%" />',
-							'<p class="bpmm_metabox_description">', $field['desc'], '</p>';
+							'<p class="DMB_metabox_description">', $field['desc'], '</p>';
 						break;
 					case 'text_small':
-						echo '<input class="bpmm_text_small" type="text" name="', $field['id'], '" id="', $field['id'], '" value="', $meta ? $meta : $field['std'], '" /><span class="bpmm_metabox_description">', $field['desc'], '</span>';
+						echo '<input class="DMB_text_small" type="text" name="', $field['id'], '" id="', $field['id'], '" value="', $meta ? $meta : $field['std'], '" /><span class="DMB_metabox_description">', $field['desc'], '</span>';
 						break;
 					case 'text_medium':
-						echo '<input class="bpmm_text_medium" type="text" name="', $field['id'], '" id="', $field['id'], '" value="', $meta ? $meta : $field['std'], '" /><span class="bpmm_metabox_description">', $field['desc'], '</span>';
+						echo '<input class="DMB_text_medium" type="text" name="', $field['id'], '" id="', $field['id'], '" value="', $meta ? $meta : $field['std'], '" /><span class="DMB_metabox_description">', $field['desc'], '</span>';
 						break;
 					case 'text_date':
-						echo '<input class="bpmm_text_small bpmm_datepicker" type="text" name="', $field['id'], '" id="', $field['id'], '" value="', $meta ? $meta : $field['std'], '" /><span class="bpmm_metabox_description">', $field['desc'], '</span>';
+						echo '<input class="DMB_text_small DMB_datepicker" type="text" name="', $field['id'], '" id="', $field['id'], '" value="', $meta ? $meta : $field['std'], '" /><span class="DMB_metabox_description">', $field['desc'], '</span>';
 						break;
 					case 'text_money':
-						echo '$ <input class="bpmm_text_money" type="text" name="', $field['id'], '" id="', $field['id'], '" value="', $meta ? $meta : $field['std'], '" /><span class="bpmm_metabox_description">', $field['desc'], '</span>';
+						echo '$ <input class="DMB_text_money" type="text" name="', $field['id'], '" id="', $field['id'], '" value="', $meta ? $meta : $field['std'], '" /><span class="DMB_metabox_description">', $field['desc'], '</span>';
 						break;
 					case 'textarea':
 						echo '<textarea name="', $field['id'], '" id="', $field['id'], '" cols="60" rows="10" style="width:97%">', $meta ? $meta : $field['std'], '</textarea>',
-							'<p class="bpmm_metabox_description">', $field['desc'], '</p>';
+							'<p class="DMB_metabox_description">', $field['desc'], '</p>';
 						break;
 					case 'textarea_small':
 						echo '<textarea name="', $field['id'], '" id="', $field['id'], '" cols="60" rows="4" style="width:97%">', $meta ? $meta : $field['std'], '</textarea>',
-							'<p class="bpmm_metabox_description">', $field['desc'], '</p>';
+							'<p class="DMB_metabox_description">', $field['desc'], '</p>';
 						break;
 					case 'select':
 						echo '<select name="', $field['id'], '" id="', $field['id'], '">';
@@ -225,25 +229,25 @@ function bpmm_register_box($boxes) {
 							echo '<option value="', $option['value'], '"', $meta == $option['value'] ? ' selected="selected"' : '', '>', $option['name'], '</option>';
 						}
 						echo '</select>';
-						echo '<p class="bpmm_metabox_description">', $field['desc'], '</p>';
+						echo '<p class="DMB_metabox_description">', $field['desc'], '</p>';
 						break;
 					case 'radio_inline':
-						echo '<div class="bpmm_radio_inline">';
+						echo '<div class="DMB_radio_inline">';
 						foreach ($field['options'] as $option) {
-							echo '<div class="bpmm_radio_inline_option"><input type="radio" name="', $field['id'], '" value="', $option['value'], '"', $meta == $option['value'] ? ' checked="checked"' : '', ' />', $option['name'], '</div>';
+							echo '<div class="DMB_radio_inline_option"><input type="radio" name="', $field['id'], '" value="', $option['value'], '"', $meta == $option['value'] ? ' checked="checked"' : '', ' />', $option['name'], '</div>';
 						}
 						echo '</div>';
-						echo '<p class="bpmm_metabox_description">', $field['desc'], '</p>';
+						echo '<p class="DMB_metabox_description">', $field['desc'], '</p>';
 						break;
 					case 'radio':
 						foreach ($field['options'] as $option) {
 							echo '<p><input type="radio" name="', $field['id'], '" value="', $option['value'], '"', $meta == $option['value'] ? ' checked="checked"' : '', ' />', $option['name'].'</p>';
 						}
-						echo '<p class="bpmm_metabox_description">', $field['desc'], '</p>';
+						echo '<p class="DMB_metabox_description">', $field['desc'], '</p>';
 						break;
 					case 'checkbox':
 						echo '<input type="checkbox" name="', $field['id'], '" id="', $field['id'], '"', $meta ? ' checked="checked"' : '', ' />';
-						echo '<span class="bpmm_metabox_description">', $field['desc'], '</span>';
+						echo '<span class="DMB_metabox_description">', $field['desc'], '</span>';
 						break;
 					case 'multicheck':
 						echo '<ul>';
@@ -253,29 +257,29 @@ function bpmm_register_box($boxes) {
 							echo '<li><input type="checkbox" name="', $field['id'], '[]" id="', $field['id'], '" value="', $value, '"', in_array( $value, $meta ) ? ' checked="checked"' : '', ' /><label>', $name, '</label></li>';
 						}
 						echo '</ul>';
-						echo '<span class="bpmm_metabox_description">', $field['desc'], '</span>';					
+						echo '<span class="DMB_metabox_description">', $field['desc'], '</span>';					
 						break;		
 					case 'title':
-						echo '<h5 class="bpmm_metabox_title">', $field['name'], '</h5>';
-						echo '<p class="bpmm_metabox_description">', $field['desc'], '</p>';
+						echo '<h5 class="DMB_metabox_title">', $field['name'], '</h5>';
+						echo '<p class="DMB_metabox_description">', $field['desc'], '</p>';
 						break;
 					case 'wysiwyg':
 						echo '<div id="poststuff" class="meta_mce">';
 						echo '<div class="customEditor"><textarea name="', $field['id'], '" id="', $field['id'], '" cols="60" rows="7" style="width:97%">', $meta ? $meta : '', '</textarea></div>';
 	                    echo '</div>';
-				        echo '<p class="bpmm_metabox_description">', $field['desc'], '</p>';
+				        echo '<p class="DMB_metabox_description">', $field['desc'], '</p>';
 					break;
 	/*
 					case 'wysiwyg':
 						echo '<textarea name="', $field['id'], '" id="', $field['id'], '" class="theEditor" cols="60" rows="4" style="width:97%">', $meta ? $meta : $field['std'], '</textarea>';
-						echo '<p class="bpmm_metabox_description">', $field['desc'], '</p>';	
+						echo '<p class="DMB_metabox_description">', $field['desc'], '</p>';	
 						break;
 	*/
 					case 'file_list':
 						if($field['mode'] == 'all' || !isset($field['mode'])) {
 							echo '<input id="upload_file" type="text" size="36" name="', $field['id'], '" value="" />';
 							echo '<input class="upload_button button" type="button" value="Upload File" />';
-							echo '<p class="bpmm_metabox_description">', $field['desc'], '</p>';
+							echo '<p class="DMB_metabox_description">', $field['desc'], '</p>';
 								$args = array(
 										'post_type' => 'attachment',
 										'numberposts' => null,
@@ -297,7 +301,7 @@ function bpmm_register_box($boxes) {
 						} elseif($field['mode'] == 'only') { 
 								echo '<input id="upload_file" type="text" size="36" name="', $field['id'], '" value="" />';
 								echo '<input class="upload_button button" type="button" value="Upload File" />';
-								echo '<p class="bpmm_metabox_description">', $field['desc'], '</p>';
+								echo '<p class="DMB_metabox_description">', $field['desc'], '</p>';
 							$files = get_post_meta($post->ID,$field['id'],false);
 							if(!empty($files)) {
 										echo '<ul class="attach_list">';
@@ -316,14 +320,14 @@ function bpmm_register_box($boxes) {
 									}
 								}
 							}
-							echo '<div id="', $field['id'], '_status" class="bpmm_upload_status">';	
+							echo '<div id="', $field['id'], '_status" class="DMB_upload_status">';	
 							echo '</div>';
 							break;
 					case 'file':
 						echo '<input id="upload_file" type="text" size="45" class="', $field['id'], '" name="', $field['id'], '" value="', $meta, '" />';
 						echo '<input class="upload_button button" type="button" value="Upload File" />';
-						echo '<p class="bpmm_metabox_description">', $field['desc'], '</p>';
-						echo '<div id="', $field['id'], '_status" class="bpmm_upload_status">';	
+						echo '<p class="DMB_metabox_description">', $field['desc'], '</p>';
+						echo '<div id="', $field['id'], '_status" class="DMB_upload_status">';	
 							if ( $meta != '' ) { 
 								$check_image = preg_match( '/(^.*\.jpg|jpeg|png|gif|ico*)/i', $meta );
 								if ( $check_image ) {
@@ -340,6 +344,17 @@ function bpmm_register_box($boxes) {
 								}	
 							}
 						echo '</div>'; 
+					break;
+					case 'taxonomy-single':
+						wp_dropdown_categories(array(
+						'name' => $field['taxonomy'], 
+						'id'=> $field['taxonomy'], 
+						'hide_empty'=> 0,
+						'show_count'=>1,
+						'selected' =>'',
+						'taxonomy' => $field['taxonomy'])
+						); 
+					echo '<p class="DMB_metabox_description">', $field['desc'], '</p>';
 					break;
 					} // endif
 				}
@@ -383,11 +398,11 @@ function bpmm_register_box($boxes) {
 				}
 				
 				if( isset($field['sanitize_func']) ) {
-					$new = call_user_func(array('bpmm_Meta_Box_Sanitize',$field['sanitize_func']), $new );
+					$new = call_user_func(array('DMB_Meta_Box_Sanitize',$field['sanitize_func']), $new );
 				}
 				// validate meta value
 				if ( isset($field['validate_func']) ) {
-					$ok = call_user_func(array('bpmm_Meta_Box_Validate', $field['validate_func']), $new);
+					$ok = call_user_func(array('DMB_Meta_Box_Validate', $field['validate_func']), $new);
 					
 					if ( $ok === false ) { // pass away when meta value is invalid
 						continue;
@@ -419,18 +434,31 @@ function bpmm_register_box($boxes) {
 			}
 		}
 		
-	} // end class
+} // end class
 
+
+class DMB_PT_Meta_Box extends DMB_Meta_Box {
+	
+	function __construct($meta_box) {
+		parent::__construct($meta_box); 		
+	
+	}
+	
+	function save() {
+		
+	}
+	
+}
 	
 	
 /**
  * Adding scripts and styles
  */
 
-	function bpmm_scripts( $hook ) {
+	function DMB_scripts( $hook ) {
 	  	if ( $hook == 'post.php' OR $hook == 'post-new.php' OR $hook == 'page-new.php' OR $hook == 'page.php' ) {
-			wp_register_script( 'cmb-scripts', bpmm_META_BOX_URL.'jquery.cmbScripts.js', array('jquery','media-upload','thickbox'));
-			wp_localize_script( 'cmb-scripts', 'bpmm_ajax', array( 'ajaxurl' => admin_url( 'admin-ajax.php' ) ) );
+			wp_register_script( 'cmb-scripts', DMB_META_BOX_URL.'jquery.cmbScripts.js', array('jquery','media-upload','thickbox'));
+			wp_localize_script( 'cmb-scripts', 'DMB_ajax', array( 'ajaxurl' => admin_url( 'admin-ajax.php' ) ) );
 			wp_enqueue_script( 'jquery' );
 			wp_enqueue_script( 'jquery-ui-core' ); // Make sure and use elements form the 1.7.3 UI - not 1.8.9
 			wp_enqueue_script( 'media-upload' );
@@ -438,29 +466,29 @@ function bpmm_register_box($boxes) {
 			wp_enqueue_script( 'cmb-scripts' );
 			wp_enqueue_style( 'thickbox' );
 			wp_enqueue_style( 'jquery-custom-ui' );
-			add_action( 'admin_head', 'bpmm_styles_inline' );
+			add_action( 'admin_head', 'DMB_styles_inline' );
 	  	}
 	}
-	add_action( 'admin_enqueue_scripts', 'bpmm_scripts',10,1 );
+	add_action( 'admin_enqueue_scripts', 'DMB_scripts',10,1 );
 
 
 
 
-	function bpmm_editor_admin_init() {
+	function DMB_editor_admin_init() {
 	  wp_enqueue_script('word-count');
 	  wp_enqueue_script('post');
 	  wp_enqueue_script('editor');
 	}
 	
-	function bpmm_editor_admin_head() {
+	function DMB_editor_admin_head() {
 	  wp_tiny_mce();
 	}
 	
 	
-	add_action('admin_init', 'bpmm_editor_admin_init');
-	add_action('admin_head', 'bpmm_editor_admin_head');
+	add_action('admin_init', 'DMB_editor_admin_init');
+	add_action('admin_head', 'DMB_editor_admin_head');
 	
-	function bpmm_editor_footer_scripts() { ?>
+	function DMB_editor_footer_scripts() { ?>
 			<script type="text/javascript">/* <![CDATA[ */
 			jQuery(function($) {
 				var i=1;
@@ -475,39 +503,39 @@ function bpmm_register_box($boxes) {
 			});
 		/* ]]> */</script>
 		<?php }
-	add_action('admin_print_footer_scripts','bpmm_editor_footer_scripts',99);
+	add_action('admin_print_footer_scripts','DMB_editor_footer_scripts',99);
 	
 	
-	function bpmm_styles_inline() { 
-		echo '<link rel="stylesheet" type="text/css" href="' . bpmm_META_BOX_URL.'style.css" />';
+	function DMB_styles_inline() { 
+		echo '<link rel="stylesheet" type="text/css" href="' . DMB_META_BOX_URL.'style.css" />';
 		// For some reason this script doesn't like to register
 		?>	
 		<style type="text/css">
-		table.bpmm_metabox td, table.bpmm_metabox th { border-bottom: 1px solid #f5f5f5; /* Optional borders between fields */ } 
-			table.bpmm_metabox th { text-align: right; font-weight:bold;}
-			table.bpmm_metabox th label { margin-top:6px; display:block;}
-			p.bpmm_metabox_description { color: #AAA; font-style: italic; margin: 2px 0 !important;}
-			span.bpmm_metabox_description { color: #AAA; font-style: italic;}
-			input.bpmm_text_small { width: 100px; margin-right: 15px;}
-			input.bpmm_text_money { width: 90px; margin-right: 15px;}
-			input.bpmm_text_medium { width: 230px; margin-right: 15px;}
-			table.bpmm_metabox input, table.bpmm_metabox textarea { font-size:11px; padding: 5px;}
-			table.bpmm_metabox li { font-size:11px; float:left; width:25%; margin:0 10px;}
-			table.bpmm_metabox ul { padding-top:5px; }
-			table.bpmm_metabox select { font-size:11px; padding: 5px 10px;}
-			table.bpmm_metabox input:focus, table.bpmm_metabox textarea:focus { background: #fffff8;}
-			.bpmm_metabox_title { margin: 0 0 5px 0; padding: 5px 0 0 0; font: italic 24px/35px Georgia,"Times New Roman","Bitstream Charter",Times,serif;}
-			.bpmm_radio_inline { padding: 4px 0 0 0;}
-			.bpmm_radio_inline_option {display: inline; padding-right: 18px;}
-			table.bpmm_metabox input[type="radio"] { margin-right:3px;}
-			table.bpmm_metabox input[type="checkbox"] { margin-right:6px;}
-			table.bpmm_metabox .mceLayout {border:1px solid #DFDFDF !important;}
-			table.bpmm_metabox .meta_mce {width:97%;}
-			table.bpmm_metabox .meta_mce textarea {width:100%;}
-			table.bpmm_metabox .bpmm_upload_status {  margin: 10px 0 0 0;}
-			table.bpmm_metabox .bpmm_upload_status .img_status {  position: relative; }
-			table.bpmm_metabox .bpmm_upload_status .img_status img { border:1px solid #DFDFDF; background: #FAFAFA; max-width:350px; padding: 5px; -moz-border-radius: 2px; border-radius: 2px;}
-			table.bpmm_metabox .bpmm_upload_status .img_status .remove_file_button { 
+		table.DMB_metabox td, table.DMB_metabox th { border-bottom: 1px solid #f5f5f5; /* Optional borders between fields */ } 
+			table.DMB_metabox th { text-align: right; font-weight:bold;}
+			table.DMB_metabox th label { margin-top:6px; display:block;}
+			p.DMB_metabox_description { color: #AAA; font-style: italic; margin: 2px 0 !important;}
+			span.DMB_metabox_description { color: #AAA; font-style: italic;}
+			input.DMB_text_small { width: 100px; margin-right: 15px;}
+			input.DMB_text_money { width: 90px; margin-right: 15px;}
+			input.DMB_text_medium { width: 230px; margin-right: 15px;}
+			table.DMB_metabox input, table.DMB_metabox textarea { font-size:11px; padding: 5px;}
+			table.DMB_metabox li { font-size:11px; float:left; width:25%; margin:0 10px;}
+			table.DMB_metabox ul { padding-top:5px; }
+			table.DMB_metabox select { font-size:11px; padding: 5px 10px;}
+			table.DMB_metabox input:focus, table.DMB_metabox textarea:focus { background: #fffff8;}
+			.DMB_metabox_title { margin: 0 0 5px 0; padding: 5px 0 0 0; font: italic 24px/35px Georgia,"Times New Roman","Bitstream Charter",Times,serif;}
+			.DMB_radio_inline { padding: 4px 0 0 0;}
+			.DMB_radio_inline_option {display: inline; padding-right: 18px;}
+			table.DMB_metabox input[type="radio"] { margin-right:3px;}
+			table.DMB_metabox input[type="checkbox"] { margin-right:6px;}
+			table.DMB_metabox .mceLayout {border:1px solid #DFDFDF !important;}
+			table.DMB_metabox .meta_mce {width:97%;}
+			table.DMB_metabox .meta_mce textarea {width:100%;}
+			table.DMB_metabox .DMB_upload_status {  margin: 10px 0 0 0;}
+			table.DMB_metabox .DMB_upload_status .img_status {  position: relative; }
+			table.DMB_metabox .DMB_upload_status .img_status img { border:1px solid #DFDFDF; background: #FAFAFA; max-width:350px; padding: 5px; -moz-border-radius: 2px; border-radius: 2px;}
+			table.DMB_metabox .DMB_upload_status .img_status .remove_file_button { 
 				text-indent: -9999px; 
 				background: url(<?php bloginfo('stylesheet_directory'); ?>/lib/metabox/images/ico-delete.png); 
 				width: 16px; 
@@ -517,8 +545,8 @@ function bpmm_register_box($boxes) {
 		<?php
 	}
 
-	add_action('wp_ajax_cmb-remove-file','bpmm_ajax_remove_file');
-	function bpmm_ajax_remove_file() {
+	add_action('wp_ajax_cmb-remove-file','DMB_ajax_remove_file');
+	function DMB_ajax_remove_file() {
 		global $wpdb;
 		$id = $_POST['pid'];
 		$query = $wpdb->prepare("UPDATE $wpdb->posts SET post_parent = 0 WHERE ID = %d"	, $id);
