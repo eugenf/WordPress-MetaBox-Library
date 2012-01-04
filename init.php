@@ -32,7 +32,7 @@ Version: 		1.0
 /************************************************************************
 		You should not edit the code below or things might explode!
 *************************************************************************/
-
+wp_enqueue_script('jquery-ui-core');
 define('DMB_META_BOX_URL', trailingslashit( str_replace( WP_CONTENT_DIR, WP_CONTENT_URL, dirname(__FILE__) ) ) );
 /**
  *
@@ -57,10 +57,10 @@ function DMB_register_box($boxes) {
 			global $DMB_boxes;
 			if(!empty($DMB_boxes)) {
 				foreach ( $DMB_boxes as $meta_box ) {
-					if($meta_box['mode'] == 'standard') {
+					if(!isset($meta_box['child_class'])) {
 						new DMB_Meta_Box($meta_box);
-					} elseif($meta_box['mode'] == 'PT') {
-						new DMB_PT_Meta_Box($meta_box);
+					} else {
+						new $meta_box['child_class']($meta_box);
 					}
 					new DMB_Custom_Column($meta_box);
 				}
@@ -172,12 +172,13 @@ function DMB_register_box($boxes) {
 		// Show fields
 		function show() {
 			global $post;
-	
+
 			// Use nonce for verification
 			echo '<input type="hidden" name="wp_meta_box_nonce" value="', wp_create_nonce(basename(__FILE__)), '" />';
 			echo '<table class="form-table DMB_metabox">';
 	
 			foreach ( $this->_meta_box['fields'] as $field ) {
+				
 				// Set up blank values for empty ones
 				if ( !isset($field['desc']) ) $field['desc'] = '';
 				if ( !isset($field['std']) ) $field['std'] = '';
@@ -197,8 +198,17 @@ function DMB_register_box($boxes) {
 				if ( isset($field['callback'])) {
 					call_user_func_array( $field['callback'], array($field,$post));
 				} else {
-				
-				switch ( $field['type'] ) {
+					$this->field_input($field,$meta,$post);
+				}
+				echo '</td>','</tr>';
+			}
+			echo '</table>';
+		}
+		
+		
+		//field input handler
+		function field_input($field,$meta,$post) {
+			switch ( $field['type'] ) {
 					case 'text':
 						echo '<input type="text" name="', $field['id'], '" id="', $field['id'], '" value="', $meta ? $meta : $field['std'], '" style="width:97%" />',
 							'<p class="DMB_metabox_description">', $field['desc'], '</p>';
@@ -346,26 +356,34 @@ function DMB_register_box($boxes) {
 						echo '</div>'; 
 					break;
 					case 'taxonomy-single':
+					$vals = wp_get_object_terms($post->ID,$field['taxonomy'],array('fields'=>'ids'));
 						wp_dropdown_categories(array(
-						'name' => $field['taxonomy'], 
+						'name' => $field['id'], 
 						'id'=> $field['taxonomy'], 
 						'hide_empty'=> 0,
-						'show_count'=>1,
-						'selected' =>'',
+						'show_count'=>0,
+						'selected' =>($vals)?$vals[0]:'',
 						'taxonomy' => $field['taxonomy'])
 						); 
 					echo '<p class="DMB_metabox_description">', $field['desc'], '</p>';
 					break;
-					} // endif
-				}
-				echo '</td>','</tr>';
-			}
-			echo '</table>';
+					
+					case 'taxonomy-text':
+					$vals = wp_get_object_terms($post->ID,$field['taxonomy'],array('fields'=>'all'));
+					echo '<input class="DMB_text_small" type="text" name="', $field['id'], '" id="', $field['id'], '" value="'.@$vals[0]->name.'" /><span class="DMB_metabox_description">', $field['desc'], '</span>';
+					break;
+					
+					} // switch
 		}
-	
+		
+		function pre_save($post_id) {
+
+			
+		}
+		
 		// Save data from metabox
 		function save( $post_id)  {
-			// verify nonce
+			global $post;
 			if ( ! isset( $_POST['wp_meta_box_nonce'] ) || !wp_verify_nonce($_POST['wp_meta_box_nonce'], basename(__FILE__))) {
 				return $post_id;
 			}
@@ -383,53 +401,57 @@ function DMB_register_box($boxes) {
 			} elseif ( !current_user_can( 'edit_post', $post_id ) ) {
 				return $post_id;
 			}
-	
-			foreach ( $this->_meta_box['fields'] as $field ) {
-				$name = $field['id'];
-				$old = get_post_meta( $post_id, $name, 'multicheck' != $field['type'] /* If multicheck this can be multiple values */ );
-				$new = isset( $_POST[$field['id']] ) ? $_POST[$field['id']] : null;
-	
-				if ( $field['type'] == 'wysiwyg' ) {
-					$new = wpautop($new);
-				}
-	
-				if ( ($field['type'] == 'textarea') || ($field['type'] == 'textarea_small') ) {
-					$new = htmlspecialchars($new);
-				}
-				
-				if( isset($field['sanitize_func']) ) {
-					$new = call_user_func(array('DMB_Meta_Box_Sanitize',$field['sanitize_func']), $new );
-				}
-				// validate meta value
-				if ( isset($field['validate_func']) ) {
-					$ok = call_user_func(array('DMB_Meta_Box_Validate', $field['validate_func']), $new);
+			
+			if(in_array($post->post_type,$this->_meta_box['pages'])) {
+
+				foreach ( $this->_meta_box['fields'] as $field ) {
+					$name = $field['id'];
+					$old = get_post_meta( $post_id, $name, 'multicheck' != $field['type'] /* If multicheck this can be multiple values */ );
+					$new = isset( $_POST[$field['id']] ) ? $_POST[$field['id']] : null;
+		
+					if ( $field['type'] == 'wysiwyg' ) {
+						$new = wpautop($new);
+					}
+		
+					if ( ($field['type'] == 'textarea') || ($field['type'] == 'textarea_small') ) {
+						$new = htmlspecialchars($new);
+					}
 					
-					if ( $ok === false ) { // pass away when meta value is invalid
-						continue;
+					if( isset($field['sanitize_func']) ) {
+						$new = call_user_func(array('DMB_Meta_Box_Sanitize',$field['sanitize_func']), $new );
 					}
-				} elseif( ($field['type']) == 'file' ) {
-					delete_post_meta($post_id,$name);
-					if($new != null) {				
-						add_post_meta($post_id,$name,$new);
+					
+					// validate meta value
+					if ( isset($field['validate_func']) ) {
+						$ok = call_user_func(array('DMB_Meta_Box_Validate', $field['validate_func']), $new);
+						
+						if ( $ok === false ) { // pass away when meta value is invalid
+							continue;
+						}
+					} elseif( ($field['type']) == 'file' ) {
+						delete_post_meta($post_id,$name);
+						if($new != null) {				
+							add_post_meta($post_id,$name,$new);
+						}
+					} elseif ( 'multicheck' == $field['type'] ) {
+						// Do the saving in two steps: first get everything we don't have yet
+						// Then get everything we should not have anymore
+						if ( empty( $new ) ) {
+							$new = array();
+						}
+						$aNewToAdd = array_diff( $new, $old );
+						$aOldToDelete = array_diff( $old, $new );
+						foreach ( $aNewToAdd as $newToAdd ) {
+							add_post_meta( $post_id, $name, $newToAdd, false );
+						}
+						foreach ( $aOldToDelete as $oldToDelete ) {
+							delete_post_meta( $post_id, $name, $oldToDelete );
+						}
+					} elseif ($new && $new != $old) {
+						update_post_meta($post_id, $name, $new);
+					} elseif ('' == $new && $old && $field['type'] != 'file') {
+						delete_post_meta($post_id, $name, $old);
 					}
-				} elseif ( 'multicheck' == $field['type'] ) {
-					// Do the saving in two steps: first get everything we don't have yet
-					// Then get everything we should not have anymore
-					if ( empty( $new ) ) {
-						$new = array();
-					}
-					$aNewToAdd = array_diff( $new, $old );
-					$aOldToDelete = array_diff( $old, $new );
-					foreach ( $aNewToAdd as $newToAdd ) {
-						add_post_meta( $post_id, $name, $newToAdd, false );
-					}
-					foreach ( $aOldToDelete as $oldToDelete ) {
-						delete_post_meta( $post_id, $name, $oldToDelete );
-					}
-				} elseif ($new && $new != $old) {
-					update_post_meta($post_id, $name, $new);
-				} elseif ('' == $new && $old && $field['type'] != 'file') {
-					delete_post_meta($post_id, $name, $old);
 				}
 			}
 		}
@@ -444,11 +466,170 @@ class DMB_PT_Meta_Box extends DMB_Meta_Box {
 	
 	}
 	
-	function save() {
+	// Show fields
+	function show() {
+		global $post;
+		$post_keys = array('post_content','post_title','menu_order','ID','post_name','post_status','post_type');
+		$related_posts = new WP_Query(array('post_type'=>$this->_meta_box['post_type_to_save'],'showposts'=>-1,'post_parent'=>$post->ID));
+		// Use nonce for verification
+		echo '<input type="hidden" name="wp_meta_box_nonce" value="', wp_create_nonce(basename(__FILE__)), '" />';
+		echo '<table class="form-table DMB_metabox">';
+		$i = 0;
+		if(count($related_posts->posts) > 0) {
+			foreach($related_posts->posts as $rel) {
+				?>
+				<script>
+				jQuery(document).ready(function() {
+					jQuery('a#<?php echo $rel->ID; ?>').click(function(event) {
+						event.preventDefault();
+						jQuery('tbody.<?php echo $rel->ID; ?>').slideToggle('slow'); 
+					});
+				});
+				</script>
+				<?php
+				echo '<thead class="'.$rel->ID.' "><tr>
+				<td class="rel-title">'.$rel->post_title.'</td>
+				<td><a id="'.$rel->ID.'" href="#" class="button">Edit</a> <a href="#" class="button">Delete</a></td></tr><tr>';
+				echo '<tbody class="'.$rel->ID.'" style="display:none">';
+				$delete_nonce = wp_create_nonce();
+				echo '<input name="'.$this->_meta_box['post_type_to_save'].'['.$i.'][ID]" value="'.$rel->ID.'" type="hidden" />';
+				foreach ( $this->_meta_box['fields'] as $field ) {
+					// Set up blank values for empty ones
+					if ( !isset($field['desc']) ) $field['desc'] = '';
+					if ( !isset($field['std']) ) $field['std'] = '';
+
+					if(in_array($field['id'],$post_keys)) {
+						$meta = $rel->$field['id'];
+					} elseif(isset($field['taxonomy']) AND is_tax($field['taxonomy'])) {
+						$meta = wp_get_object_terms($rel->ID,$field['taxonomy']);
+					} else {
+						$meta = get_post_meta($rel->ID, $field['id'], 'multicheck' != $field['type'] );
+					}
 		
+					$field['id'] = $this->_meta_box['post_type_to_save'].'['.$i.']['.$field['id'].']';
+					
+					echo '<tr class="'.$field['type'].'">';
+			
+					if ( $field['type'] == "title" ) {
+						echo '<td colspan="2">';
+					} else {
+						if( $this->_meta_box['show_names'] == true ) {
+							echo '<th style="width:18%"><label for="', $field['id'], '">', $field['name'], '</label></th>';
+						}			
+						echo '<td>';
+					}		
+					
+					if ( isset($field['callback'])) {
+						call_user_func_array( $field['callback'], array($field,$post));
+					} else {
+						$this->field_input($field,$meta,$rel);
+					}
+					echo '</td>','</tr>';
+				} //endforeach
+				$i++;
+				echo '<tr><td colspan="2"><hr class="mb_line_break"/></td></tr></tbody>';
+			} //endforeach
+		}
+		//empty form
+		foreach ( $this->_meta_box['fields'] as $field ) {
+				// Set up blank values for empty ones
+				if ( !isset($field['desc']) ) $field['desc'] = '';
+				if ( !isset($field['std']) ) $field['std'] = '';
+				
+				$field['id'] = $this->_meta_box['post_type_to_save'].'['.$i.']['.$field['id'].']';
+	
+				echo '<tr class="'.$field['type'].'">';
+		
+				if ( $field['type'] == "title" ) {
+					echo '<td colspan="2">';
+				} else {
+					if( $this->_meta_box['show_names'] == true ) {
+						echo '<th style="width:18%"><label for="', $field['id'], '">', $field['name'], '</label></th>';
+					}			
+					echo '<td>';
+				}		
+				
+				if ( isset($field['callback'])) {
+					call_user_func_array( $field['callback'], array($field,$post));
+				} else {
+					$this->field_input($field,$meta = '',$post);
+				}
+				echo '</td>','</tr>';
+			} //endforeach		
+		
+		echo '</table>';
 	}
 	
-}
+	function save($post_id) {
+		if ( ! isset( $_POST['wp_meta_box_nonce'] ) || !wp_verify_nonce($_POST['wp_meta_box_nonce'], basename(__FILE__))) {
+			return $post_id;
+		}
+
+		// check autosave
+		if ( defined('DOING_AUTOSAVE' ) && DOING_AUTOSAVE) {
+			return $post_id;
+		}
+					
+		$post = get_post($post_id);
+		$post_keys = array('post_content','post_title','menu_order','ID','post_name','post_status','post_type');
+		
+		if($post->post_type != $this->_meta_box['post_type_to_save'] and in_array($post->post_type,$this->_meta_box['pages'])) {
+			foreach($_POST[$this->_meta_box['post_type_to_save']] as $related_posts) {
+				//setup values
+				$new = array();
+
+				foreach($related_posts as $k => $v) {
+					if(in_array($k,$post_keys)) {
+						$new['post'][$k] = $v; 
+					} elseif(is_taxonomy($k)) {
+						if(is_array($v)) {
+							$new['tax'][$k] = array(implode(',',$v));
+						} elseif(in_array($k, $this->_meta_box['stringed_terms'])) {
+							$new['tax'][$k] = (string) $v;
+						} else {
+							$new['tax'][$k] = intval($v);
+						}
+					} else {
+						$new['meta'][$k] = $v;
+					}
+				}
+				
+				update_option('testing_meta',$new['tax']);
+				
+				if(!empty($new)) {
+					$new['post']['post_type'] = $this->_meta_box['post_type_to_save'];
+					$new['post']['post_parent'] = $post_id;
+					if(isset($new['post']['ID'])) {
+						$new_post_id = wp_update_post($new['post']);
+					} else {
+						$new_post_id = wp_insert_post($new['post']);
+					}
+					
+					
+					foreach($new['meta'] as $mk => $mv) {
+						update_post_meta($new_post_id,$mk,$mv);
+					}
+					
+					if($new['tax'] && $new_post_id) {
+						foreach($new['tax'] as $taxonomy => $terms) {
+							
+						
+							if(is_array($terms)) {
+								$term_ids = array_map('intval', $terms);
+						    $term_ids = array_unique( $terms );
+						    $terms = $term_ids;
+							} 
+							
+							$error = wp_set_object_terms($new_post_id,$terms,$taxonomy,false);
+						
+						}				
+					}
+				}
+			}	
+		}
+		return $post_id;
+	} 	
+}// end class
 	
 	
 /**
@@ -511,7 +692,7 @@ class DMB_PT_Meta_Box extends DMB_Meta_Box {
 		// For some reason this script doesn't like to register
 		?>	
 		<style type="text/css">
-		table.DMB_metabox td, table.DMB_metabox th { border-bottom: 1px solid #f5f5f5; /* Optional borders between fields */ } 
+			table.DMB_metabox td, table.DMB_metabox th { border-bottom: 1px solid #f5f5f5; /* Optional borders between fields */ } 
 			table.DMB_metabox th { text-align: right; font-weight:bold;}
 			table.DMB_metabox th label { margin-top:6px; display:block;}
 			p.DMB_metabox_description { color: #AAA; font-style: italic; margin: 2px 0 !important;}
@@ -541,6 +722,9 @@ class DMB_PT_Meta_Box extends DMB_Meta_Box {
 				width: 16px; 
 				height: 16px; 
 				}
+			table.DMB_metabox thead tr {
+				border-bottom: 1px solid #ccc;
+			}
 		</style>
 		<?php
 	}
