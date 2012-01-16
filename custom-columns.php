@@ -16,7 +16,7 @@ class DMB_Custom_Column {
 			$this->_meta_box = $meta_box;
 			$this->setup();
 			$this->columns();
-			//print_r($this->_meta_box);
+			//print_r($this->actions);
 		}
 	
 		function setup() {
@@ -25,7 +25,7 @@ class DMB_Custom_Column {
 				$this->current_field = $field;
 				$this->actions = array();
 				//set custom columns if option is set.
-					if(@$field['custom_column'] === 'true') {
+					if($field['custom_column'] == 'true') {
 						if(is_array($this->_meta_box['pages'])) {
 							foreach($this->_meta_box['pages'] as $page) {
 								$this->custom_cols[$page][] = array( 

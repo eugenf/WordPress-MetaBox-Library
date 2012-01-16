@@ -1,14 +1,17 @@
 <?php
 /*
-Script Name: 	Custom Metaboxes and Fields
-Contributors: 	Andrew Norcross (@norcross / andrewnorcross.com)
-				Jared Atchison (@jaredatch / jaredatchison.com)
-				Bill Erickson (@billerickson / billerickson.net)
-				Mike Van Winkle (@mpvanwinkle /mikevanwinkle.com)
-Description: 	This will create metaboxes with custom fields that will blow your mind.
-Version: 		1.0
+Plugin Name: Metabox Class for WP Developers
+Version: 0.0.1
+Description: This plugin creates a series of simple functions developers can use to create metaboxes
+Author: Mike Van Winkle
+Author URI: http://www.mikevanwinkle.com
+Plugin URI: http://www.mikevanwinkle.com/wordpress/plugins/developer-metaboxes/
+License: GPL
 */
+define("DMB_VERSION","1.0");
+define("DMB_ROOT",dirname(__FILE__));
 
+add_action('init',array('DMB_Meta_Box_Builder','init_boxes'));
 /**
  * Released under the GPL license
  * http://www.opensource.org/licenses/gpl-license.php
@@ -39,11 +42,13 @@ define('DMB_META_BOX_URL', trailingslashit( str_replace( WP_CONTENT_DIR, WP_CONT
  * This function registers all the metaboxes and returns a global variable used by the class.
  *
  */
-function DMB_register_box($boxes) {
+if(!function_exists('DMB_register_box')) {
+	function DMB_register_box($boxes) {
 		global $DMB_boxes;
 		$DMB_boxes[] = $boxes;
 		return $DMB_boxes;
 	}
+}
 	
 /**
  *
@@ -52,7 +57,6 @@ function DMB_register_box($boxes) {
  */
 
 	class DMB_Meta_Box_Builder {	
-		
 		public static function init_boxes() {
 			global $DMB_boxes;
 			if(!empty($DMB_boxes)) {
